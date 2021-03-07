@@ -16,7 +16,8 @@ type ResultDTO struct {
 }
 
 type StandingDTO struct {
-	TeamName string
-	Wins     int
-	Loses    int
+	TeamName       string
+	Wins           int
+	Loses          int
+	WinsSecondHalf int
 }

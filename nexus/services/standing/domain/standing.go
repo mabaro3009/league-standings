@@ -31,22 +31,30 @@ func NewStanding(store standingStore, scrapper standingScrapper) *Standing {
 }
 
 func (s *Standing) GetCurrentStandings(link string) ([]*util.StandingDTO, error) {
+	if err := s.loadResults(link); err != nil {
+		return nil, err
+	}
+
+	return s.getStandings()
+}
+
+func (s *Standing) loadResults(link string) error {
 	names, err := s.scrapper.GetTeamsInfo(link)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = s.store.SaveTeamsInfo(names); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = s.store.InitStandings(); err != nil {
-		return nil, err
+		return err
 	}
 
 	scrappedResults, err := s.scrapper.GetResults(link)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var team1ID, team2ID models.TeamID
@@ -54,38 +62,51 @@ func (s *Standing) GetCurrentStandings(link string) ([]*util.StandingDTO, error)
 	for _, scrappedResult := range scrappedResults {
 		team1ID, err = s.store.GetTeamIDFromAbv(scrappedResult.Team1)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		team2ID, err = s.store.GetTeamIDFromAbv(scrappedResult.Team2)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		team1Standing, err = s.store.GetTeamStanding(team1ID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		result := &util.ResultDTO{
 			Team1:        team1ID,
 			Team2:        team2ID,
 			Winner:       scrappedResult.Winner,
-			IsSecondHalf: team1Standing.Wins >= util.LECGamesPerTeam/2,
+			IsSecondHalf: (team1Standing.Wins + team1Standing.Loses) >= util.LECGamesPerTeam/2,
 		}
 
 		if err = s.store.UpdateRecords(result); err != nil {
-			return nil, err
+			return err
 		}
 
 		if err = s.store.UpdateTeamStandings(team1ID, team2ID, result); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (s *Standing) getStandings() ([]*util.StandingDTO, error) {
+	unorderedStandings, err := s.getUnorderedStandings()
+	if err != nil {
+		return nil, err
+	}
+
+	//TODO: Order standings
+	return unorderedStandings, err
+}
+
+func (s *Standing) getUnorderedStandings() ([]*util.StandingDTO, error) {
 	standingsFromDB := s.store.GetAllStandings()
 	standings := make([]*util.StandingDTO, 0, len(standingsFromDB))
-	var standing *util.StandingDTO
 	for _, standingFromDB := range standingsFromDB {
-		standing, err = s.standingToDTO(standingFromDB)
+		standing, err := s.standingToDTO(standingFromDB)
 		if err != nil {
 			return nil, err
 		}
@@ -101,8 +122,9 @@ func (s *Standing) standingToDTO(standing *models.TeamStanding) (*util.StandingD
 		return nil, err
 	}
 	return &util.StandingDTO{
-		TeamName: name,
-		Wins:     standing.Wins,
-		Loses:    standing.Loses,
+		TeamName:       name,
+		Wins:           standing.Wins,
+		Loses:          standing.Loses,
+		WinsSecondHalf: standing.WinsSecondHalf,
 	}, nil
 }
