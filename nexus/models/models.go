@@ -4,23 +4,32 @@ import (
 	"github.com/nu7hatch/gouuid"
 )
 
-type LeagueID uuid.UUID
-type League struct {
-	ID                LeagueID `json:"id"`
-	Name              string   `json:"name"`
-	GamesBetweenTeams int      `json:"games_between_teams"`
-	BestOf            int      `json:"best_of"`
+type TeamID string
+
+func NewTeamID() TeamID {
+	id, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+	return TeamID(id.String())
 }
 
-type TeamID uuid.UUID
 type Team struct {
-	ID       TeamID   `json:"id"`
-	Name     string   `json:"name"`
-	Abv      string   `json:"abv"`
-	LeagueID LeagueID `json:"league_id"`
+	ID   TeamID `json:"id"`
+	Name string `json:"name"`
+	Abv  string `json:"abv"`
 }
 
-type TeamStandingID uuid.UUID
+type TeamStandingID string
+
+func NewTeamStandingID() TeamStandingID {
+	id, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+	return TeamStandingID(id.String())
+}
+
 type TeamStanding struct {
 	ID             TeamStandingID `json:"id"`
 	TeamID         TeamID         `json:"team_id"`
@@ -29,7 +38,16 @@ type TeamStanding struct {
 	WinsSecondHalf int            `json:"wins_second_half"`
 }
 
-type TeamRecordID uuid.UUID
+type TeamRecordID string
+
+func NewTeamRecordID() TeamRecordID {
+	id, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+	return TeamRecordID(id.String())
+}
+
 type TeamRecord struct {
 	ID        TeamRecordID `json:"id"`
 	Team1ID   TeamID       `json:"team1_id"`
