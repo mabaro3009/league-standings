@@ -2,6 +2,7 @@ package domain
 
 import (
 	"github.com/campoy/unique"
+
 	"github.com/mabaro3009/league-standings/nexus/models"
 	"github.com/mabaro3009/league-standings/nexus/services/standing/util"
 )
@@ -155,25 +156,19 @@ func (s *Standing) solveTiebreaker(standings ...*util.StandingDTO) ([]*util.Stan
 			return nil, err
 		}
 		if record.Team1Wins > record.Team2Wins {
-			orderedStandings = append(orderedStandings, standings[0])
-			orderedStandings = append(orderedStandings, standings[1])
+			orderedStandings = append(orderedStandings, standings[0], standings[1])
 		} else if record.Team1Wins < record.Team2Wins {
-			orderedStandings = append(orderedStandings, standings[1])
-			orderedStandings = append(orderedStandings, standings[0])
+			orderedStandings = append(orderedStandings, standings[1], standings[0])
 		} else { // sort by second-half wins
 			if standings[0].WinsSecondHalf > standings[1].WinsSecondHalf {
-				orderedStandings = append(orderedStandings, standings[0])
-				orderedStandings = append(orderedStandings, standings[1])
+				orderedStandings = append(orderedStandings, standings[0], standings[1])
 			} else if standings[0].WinsSecondHalf < standings[1].WinsSecondHalf {
-				orderedStandings = append(orderedStandings, standings[1])
-				orderedStandings = append(orderedStandings, standings[0])
+				orderedStandings = append(orderedStandings, standings[1], standings[0])
 			} else { // sort alphabetically
 				if standings[0].TeamName > standings[1].TeamName {
-					orderedStandings = append(orderedStandings, standings[0])
-					orderedStandings = append(orderedStandings, standings[1])
+					orderedStandings = append(orderedStandings, standings[0], standings[1])
 				} else {
-					orderedStandings = append(orderedStandings, standings[1])
-					orderedStandings = append(orderedStandings, standings[0])
+					orderedStandings = append(orderedStandings, standings[1], standings[0])
 				}
 			}
 		}

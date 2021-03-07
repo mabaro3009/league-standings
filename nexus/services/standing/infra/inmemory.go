@@ -2,6 +2,7 @@ package infra
 
 import (
 	"errors"
+
 	"github.com/mabaro3009/league-standings/nexus/models"
 	"github.com/mabaro3009/league-standings/nexus/services/standing/util"
 )
