@@ -1,0 +1,58 @@
+run:
+  skip-dirs:
+  skip-files:
+  deadline: 10m
+
+linters-settings:
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+      - opinionated
+    disabled-tags:
+      - experimental
+    disabled-checks:
+      - paramTypeCombine
+
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 30
+  gocognit:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 30
+
+linters:
+  enable:
+    - megacheck
+    - govet
+    - golint
+    - misspell
+    - depguard
+    - gofmt
+    - varcheck
+    - gosimple
+    - gocyclo
+    - gocognit
+    - gocritic
+    - tparallel
+    - unconvert
+  disable:
+    - unused
+
+  fast: false
+
+issues:
+  exclude:
+
+# output configuration options
+output:
+  # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
+  format: colored-line-number
+  # print lines of code with issue, default is true
+  print-issued-lines: true
+  # print linter name in the end of issue text, default is true
+  print-linter-name: true
