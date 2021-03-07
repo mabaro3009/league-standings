@@ -8,7 +8,7 @@ import (
 func main() {
 	s := standing.New()
 	standings := s.GetCurrentStandings()
-	for _, stand := range standings {
-		fmt.Println(stand)
+	for _, stand := range standings.Standings {
+		fmt.Println(fmt.Sprintf("%d - %s", stand.Position, stand.Name))
 	}
 }

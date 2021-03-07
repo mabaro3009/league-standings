@@ -4,7 +4,6 @@ import (
 	"github.com/mabaro3009/league-standings/nexus/services/standing/app"
 	"github.com/mabaro3009/league-standings/nexus/services/standing/domain"
 	"github.com/mabaro3009/league-standings/nexus/services/standing/infra"
-	"github.com/mabaro3009/league-standings/nexus/services/standing/util"
 )
 
 type Service struct {
@@ -15,7 +14,7 @@ func New() *Service {
 	return &Service{standing: domain.NewStanding(infra.NewStandingStoreInMemory(), &infra.Scrapper{})}
 }
 
-func (s *Service) GetCurrentStandings() []*util.StandingDTO {
+func (s *Service) GetCurrentStandings() *app.CurrentStandingsResp {
 	standings, err := app.GetCurrentStandings(s.standing)
 	if err != nil {
 		panic(err)
