@@ -168,3 +168,13 @@ func (s *StandingStoreInMemory) GetTeamNameFromID(id models.TeamID) (string, err
 
 	return team.Name, nil
 }
+
+func (s *StandingStoreInMemory) GetRecord(team1ID models.TeamID, team2ID models.TeamID) (*models.TeamRecord, error) {
+	for _, v := range s.records {
+		if v.Team1ID == team1ID && v.Team2ID == team2ID {
+			return v, nil
+		}
+	}
+
+	return nil, ErrNotFound
+}

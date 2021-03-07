@@ -16,6 +16,7 @@ type ResultDTO struct {
 }
 
 type StandingDTO struct {
+	TeamID         models.TeamID
 	TeamName       string
 	Wins           int
 	Loses          int

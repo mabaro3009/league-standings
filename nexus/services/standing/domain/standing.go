@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/campoy/unique"
 	"github.com/mabaro3009/league-standings/nexus/models"
 	"github.com/mabaro3009/league-standings/nexus/services/standing/util"
 )
@@ -14,6 +15,7 @@ type standingStore interface {
 	UpdateTeamStandings(team1ID, team2ID models.TeamID, result *util.ResultDTO) error
 	GetAllStandings() []*models.TeamStanding
 	GetTeamNameFromID(id models.TeamID) (string, error)
+	GetRecord(team1ID models.TeamID, team2ID models.TeamID) (*models.TeamRecord, error)
 }
 
 type standingScrapper interface {
@@ -98,8 +100,7 @@ func (s *Standing) getStandings() ([]*util.StandingDTO, error) {
 		return nil, err
 	}
 
-	//TODO: Order standings
-	return unorderedStandings, err
+	return s.orderStandings(unorderedStandings)
 }
 
 func (s *Standing) getUnorderedStandings() ([]*util.StandingDTO, error) {
@@ -116,12 +117,81 @@ func (s *Standing) getUnorderedStandings() ([]*util.StandingDTO, error) {
 	return standings, nil
 }
 
+func (s *Standing) orderStandings(standings []*util.StandingDTO) ([]*util.StandingDTO, error) {
+	wins := make(map[int][]*util.StandingDTO)
+	keys := make([]int, 0)
+	for _, standing := range standings {
+		wins[standing.Wins] = append(wins[standing.Wins], standing)
+		keys = append(keys, standing.Wins)
+	}
+	unique.Slice(&keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	orderedStandings := make([]*util.StandingDTO, 0, len(standings))
+	for _, k := range keys {
+		teams := wins[k]
+		switch len(teams) {
+		case 1:
+			orderedStandings = append(orderedStandings, wins[k][0])
+		default:
+			subOrdered, err := s.solveTiebreaker(wins[k]...)
+			if err != nil {
+				return nil, err
+			}
+			orderedStandings = append(orderedStandings, subOrdered...)
+		}
+	}
+
+	return orderedStandings, nil
+}
+
+// PRE: len(standings) >= 2
+func (s *Standing) solveTiebreaker(standings ...*util.StandingDTO) ([]*util.StandingDTO, error) {
+	orderedStandings := make([]*util.StandingDTO, 0, len(standings))
+	if len(standings) == 2 {
+		record, err := s.store.GetRecord(standings[0].TeamID, standings[1].TeamID)
+		if err != nil {
+			return nil, err
+		}
+		if record.Team1Wins > record.Team2Wins {
+			orderedStandings = append(orderedStandings, standings[0])
+			orderedStandings = append(orderedStandings, standings[1])
+		} else if record.Team1Wins < record.Team2Wins {
+			orderedStandings = append(orderedStandings, standings[1])
+			orderedStandings = append(orderedStandings, standings[0])
+		} else { // sort by second-half wins
+			if standings[0].WinsSecondHalf > standings[1].WinsSecondHalf {
+				orderedStandings = append(orderedStandings, standings[0])
+				orderedStandings = append(orderedStandings, standings[1])
+			} else if standings[0].WinsSecondHalf < standings[1].WinsSecondHalf {
+				orderedStandings = append(orderedStandings, standings[1])
+				orderedStandings = append(orderedStandings, standings[0])
+			} else { // sort alphabetically
+				if standings[0].TeamName > standings[1].TeamName {
+					orderedStandings = append(orderedStandings, standings[0])
+					orderedStandings = append(orderedStandings, standings[1])
+				} else {
+					orderedStandings = append(orderedStandings, standings[1])
+					orderedStandings = append(orderedStandings, standings[0])
+				}
+			}
+		}
+
+		return orderedStandings, nil
+	}
+
+	// TODO: Implement > 2 team tiebreakers
+	return standings, nil
+}
+
 func (s *Standing) standingToDTO(standing *models.TeamStanding) (*util.StandingDTO, error) {
 	name, err := s.store.GetTeamNameFromID(standing.TeamID)
 	if err != nil {
 		return nil, err
 	}
 	return &util.StandingDTO{
+		TeamID:         standing.TeamID,
 		TeamName:       name,
 		Wins:           standing.Wins,
 		Loses:          standing.Loses,
