@@ -181,8 +181,43 @@ func (s *Standing) solveTiebreaker(standings ...*util.StandingDTO) ([]*util.Stan
 		return orderedStandings, nil
 	}
 
-	// TODO: Implement > 2 team tiebreakers
-	return standings, nil
+	tiedStandings, err := s.generateTiedStandings(standings...)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.orderStandings(tiedStandings)
+}
+
+func (s *Standing) generateTiedStandings(standings ...*util.StandingDTO) ([]*util.StandingDTO, error) {
+	tiedStandingsMap := make(map[models.TeamID]*util.StandingDTO)
+	for _, standing := range standings {
+		tiedStandingsMap[standing.TeamID] = &util.StandingDTO{
+			TeamID:         standing.TeamID,
+			TeamName:       standing.TeamName,
+			Wins:           0,
+			Loses:          0,
+			WinsSecondHalf: standing.WinsSecondHalf,
+		}
+	}
+	for i := 0; i < len(standings); i++ {
+		for j := i + 1; j < len(standings); j++ {
+			record, err := s.store.GetRecord(standings[i].TeamID, standings[j].TeamID)
+			if err != nil {
+				return nil, err
+			}
+			tiedStandingsMap[record.Team1ID].Wins += record.Team1Wins
+			tiedStandingsMap[record.Team1ID].Loses += record.Team2Wins
+			tiedStandingsMap[record.Team2ID].Wins += record.Team2Wins
+			tiedStandingsMap[record.Team2ID].Loses += record.Team1Wins
+		}
+	}
+	tiedStandings := make([]*util.StandingDTO, 0, len(standings))
+	for _, v := range tiedStandingsMap {
+		tiedStandings = append(tiedStandings, v)
+	}
+
+	return tiedStandings, nil
 }
 
 func (s *Standing) standingToDTO(standing *models.TeamStanding) (*util.StandingDTO, error) {
